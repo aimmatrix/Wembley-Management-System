@@ -5,7 +5,7 @@ using System.Drawing;
 
 namespace WembleyManagementSystem
 {
-    //This is the Ui that shows after someone buys a ticket
+    //UI
     public class PurchaseConfirmationForm : Form
     {
         public PurchaseConfirmationForm()
@@ -25,7 +25,6 @@ namespace WembleyManagementSystem
         }
     }
 
-    //This is the main interface that shows the event list and also the buy button 
     public class ClientForm : Form
     {
         private DataGridView eventGrid = new DataGridView();
@@ -85,6 +84,7 @@ namespace WembleyManagementSystem
         }
     }
 
+    //Wembley Event Part
     public class EventNode
     {
         public WembleyEvent Event { get; set; }
@@ -397,42 +397,164 @@ namespace WembleyManagementSystem
 
     public class EventManagementSystem
     {
-        private EventBinaryTree _tree;
+        private EventBinaryTree tree;
 
         public EventManagementSystem()
         {
-            _tree = new EventBinaryTree();
+            tree = new EventBinaryTree();
         }
 
         public void AddEvent(WembleyEvent wembleyEvent)
         {
-            _tree.Insert(wembleyEvent);
+            tree.Insert(wembleyEvent);
         }
 
         public void UpdateEvent(int eventId, WembleyEvent updatedEvent)
         {
-            var node = _tree.FindEvent(eventId);
+            var node = tree.FindEvent(eventId);
             if (node != null) node.Event.Attendance = updatedEvent.Attendance;
         }
 
         public void DeleteEvent(int eventId)
         {
-            _tree.Delete(_tree.FindEvent(eventId).Event);
+            tree.Delete(tree.FindEvent(eventId).Event);
         }
 
         public WembleyEvent GetEvent(int eventId)
         {
-            return _tree.FindEvent(eventId).Event;
+            return tree.FindEvent(eventId).Event;
         }
 
         public WembleyEvent[] GetAllEvents()
         {
-            int size = _tree.GetSize();
+            int size = tree.GetSize();
             WembleyEvent[] events = new WembleyEvent[size];
             int index = 0;
-            _tree.GetAll(_tree.GetRoot(), events, ref index);
+            tree.GetAll(tree.GetRoot(), events, ref index);
             return events;
         }
+    }
+
+    //User Part
+    public class UserNode
+    {
+        public User User { get; set; }
+        public UserNode Next { get; set; } //pointer to the next node in the linked list
+        public UserNode(User user)
+        {
+            User = user;
+            Next = null;
+        }
+    }
+
+    public class UserLinkedList
+    {
+        private UserNode root;
+
+        public UserLinkedList()
+        {
+            root = null;
+        }
+
+        public void AddUser(User user)
+        {
+            UserNode newNode = new UserNode(user);
+
+            if (root == null)
+            {
+                root = newNode;
+            }
+            else
+            {
+                //traverse to the end of the list and add the new node
+                UserNode current = root;
+                while (current.Next != null)
+                {
+                    current = current.Next;
+                }
+
+                current.Next = newNode;
+            }
+        }
+
+        public void UpdateUser(int userId, User updatedUser)
+        {
+            //traverse the list to find the user and update the information
+            UserNode current = root;
+            while (current != null)
+            {
+                if (current.User.UserID == userId)
+                {
+                    current.User = updatedUser;
+                    return;
+                }
+
+                current = current.Next;
+            }
+        }
+
+        public void DeleteUser(int userId)
+        {
+            if (root == null) return;
+
+            //if the root node is the one to delete get the next node and make it the new root
+            if (root.User.UserID == userId)
+            {
+                root = root.Next;
+                return;
+            }
+
+            //traverse the list to find the user and delete it by changing the next pointer of the previous node to skip the deleted node
+            UserNode current = root;
+            while (current.Next != null)
+            {
+                if (current.Next.User.UserID == userId)
+                {
+                    current.Next = current.Next.Next;
+                    return;
+                }
+                current = current.Next;
+            }
+        }
+
+        public User GetUser(int userId)
+        {
+            UserNode current = root;
+            while (current != null)
+            {
+                if (current.User.UserID == userId)
+                {
+                    return current.User;
+                }
+                current = current.Next;
+            }
+            return null; // Not found
+        }
+
+        public UserNode[] GetAllUsers()
+        {
+            //traverse the list to count the number of users and store them in an array
+            int size = 0;
+            UserNode current = root;
+            while (current != null)
+            {
+                size++;
+                current = current.Next;
+            }
+
+            //create an array of the correct size and fill it with the users
+            UserNode[] users = new UserNode[size];
+            current = root;
+            int index = 0;
+            while (current != null)
+            {
+                users[index++] = current;
+                current = current.Next;
+            }
+
+            return users;
+        }
+
     }
 
     public class User
@@ -446,38 +568,55 @@ namespace WembleyManagementSystem
 
     public class UserManagementSystem
     {
+        private UserLinkedList userList;
+
+        public UserManagementSystem()
+        {
+            userList = new UserLinkedList();
+        }
+
         public void RegisterUser(User user)
         {
-
+            userList.AddUser(user);
         }
 
         public void UpdateUser(int userId, User updatedUser)
         {
-
+            userList.UpdateUser(userId, updatedUser);
         }
 
         public void DeleteUser(int userId)
         {
-
+            userList.DeleteUser(userId);
         }
 
         public User GetUser(int userId)
         {
-            return null;
+            return userList.GetUser(userId);
         }
 
-        public List<User> GetAllUsers()
+        public UserNode[] GetAllUsers()
         {
-            return new List<User>();
+            return userList.GetAllUsers();
+        }
+
+        public void PrintAllUsers()
+        {
+            UserNode[] users = userList.GetAllUsers();
+            foreach (var userNode in users)
+            {
+                Console.WriteLine($"UserID: {userNode.User.UserID}, Username: {userNode.User.Username}, Email: {userNode.User.Email}, Role: {userNode.User.UserRole}");
+            }
         }
     }
 
+    //Main Program
     public static class Program
     {
 
         public static void Main()
         {
-            //Binary tree test
+            //Wembley Event Binary tree test
 
             EventBinaryTree eventBinaryTree = new EventBinaryTree();
 
@@ -498,7 +637,25 @@ namespace WembleyManagementSystem
 
             eventBinaryTree.Print();
 
+            //User Linked List test
+            UserManagementSystem userManagementSystem = new UserManagementSystem();
 
+            for (int i = 0; i < 10; ++i)
+            {
+                userManagementSystem.RegisterUser(new User() { UserID = i, Username = "User" + i });
+            }
+
+            userManagementSystem.PrintAllUsers();
+
+            userManagementSystem.UpdateUser(5, new User() { UserID = 5, Username = "UpdatedUser5" });
+
+            userManagementSystem.DeleteUser(3);
+
+            Console.WriteLine("-------------------");
+
+            Console.WriteLine("Get User with ID 5: " + userManagementSystem.GetUser(5)?.Username);
+
+            userManagementSystem.PrintAllUsers();
 
             //UI
             ApplicationConfiguration.Initialize();
