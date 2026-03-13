@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Data.SqlClient;
 using System.Drawing;
 using System.Windows.Forms;
+using user;
 
 namespace WembleyManagementSystem
 {
@@ -32,18 +33,109 @@ namespace WembleyManagementSystem
         private DataGridView eventGrid = new DataGridView();
         private EventManagementSystem _system;
 
+        //tracks who is logged in, null means no one is logged in
+        private string _loggedInUsername = null;
+
+        //top panel controls for the login/logout bar
+        private Panel topPanel = new Panel();
+        private Button btnLogin = new Button();
+        private Label lblUsername = new Label();
+        private Button btnLogout = new Button();
+
         public ClientForm(EventManagementSystem system)
         {
             _system = system;
             this.Text = "Wembley Events - Client Portal";
-            this.Size = new Size(800, 450);
+            this.Size = new Size(800, 490);
+
+            //sets up the top bar that holds the login and logout controls
+            topPanel.Dock = DockStyle.Top;
+            topPanel.Height = 40;
+            topPanel.BackColor = Color.FromArgb(30, 30, 60);
+
+            //login button shown when no user is logged in
+            btnLogin.Text = "Login";
+            btnLogin.Location = new Point(696, 7);
+            btnLogin.Size = new Size(88, 26);
+            btnLogin.BackColor = Color.FromArgb(0, 120, 215);
+            btnLogin.ForeColor = Color.White;
+            btnLogin.FlatStyle = FlatStyle.Flat;
+            btnLogin.FlatAppearance.BorderSize = 0;
+            btnLogin.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+            btnLogin.Cursor = Cursors.Hand;
+            btnLogin.Click += BtnLogin_Click;
+
+            //username label hidden by default, shows after login
+            lblUsername.Location = new Point(555, 11);
+            lblUsername.Size = new Size(135, 18);
+            lblUsername.ForeColor = Color.White;
+            lblUsername.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+            lblUsername.TextAlign = ContentAlignment.MiddleRight;
+            lblUsername.Visible = false;
+
+            //logout button hidden by default, shows after login
+            btnLogout.Text = "Logout";
+            btnLogout.Location = new Point(696, 7);
+            btnLogout.Size = new Size(88, 26);
+            btnLogout.BackColor = Color.FromArgb(180, 40, 40);
+            btnLogout.ForeColor = Color.White;
+            btnLogout.FlatStyle = FlatStyle.Flat;
+            btnLogout.FlatAppearance.BorderSize = 0;
+            btnLogout.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+            btnLogout.Cursor = Cursors.Hand;
+            btnLogout.Visible = false;
+            btnLogout.Click += BtnLogout_Click;
+
+            //adds the login/logout controls to the top panel
+            topPanel.Controls.Add(btnLogin);
+            topPanel.Controls.Add(lblUsername);
+            topPanel.Controls.Add(btnLogout);
 
             eventGrid.Dock = DockStyle.Fill;
             eventGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             eventGrid.AllowUserToAddRows = false;
+
+            //adds the grid first so the top panel sits on top of it
             this.Controls.Add(eventGrid);
+            this.Controls.Add(topPanel);
 
             LoadEvents();
+        }
+
+        private void BtnLogin_Click(object sender, EventArgs e)
+        {
+            //opens the login form and waits for the result
+            var loginForm = new user.LoginForm();
+            if (loginForm.ShowDialog(this) == DialogResult.OK)
+            {
+                //saves the logged in username and updates the UI
+                _loggedInUsername = loginForm.LoggedInUsername;
+                UpdateLoginUI();
+            }
+        }
+
+        private void BtnLogout_Click(object sender, EventArgs e)
+        {
+            //clears the logged in user and updates the UI back to logged out state
+            _loggedInUsername = null;
+            UpdateLoginUI();
+        }
+
+        private void UpdateLoginUI()
+        {
+            bool loggedIn = _loggedInUsername != null;
+
+            //shows the login button when logged out, hides it when logged in
+            btnLogin.Visible = !loggedIn;
+
+            //shows the username and logout button only when someone is logged in
+            lblUsername.Text = loggedIn ? $"Welcome, {_loggedInUsername}" : "";
+            lblUsername.Visible = loggedIn;
+            btnLogout.Visible = loggedIn;
+
+            //shows the buy column only when a user is logged in
+            if (eventGrid.Columns.Contains("BuyButton"))
+                eventGrid.Columns["BuyButton"].Visible = loggedIn;
         }
 
         private void LoadEvents()
@@ -52,7 +144,7 @@ namespace WembleyManagementSystem
             eventGrid.DataSource = null;
             eventGrid.DataSource = _system.GetAllEvents();
 
-            // adds the buy button
+            //adds the buy button hidden by default, only visible after login
             if (!eventGrid.Columns.Contains("BuyButton"))
             {
                 var buyCol = new DataGridViewButtonColumn()
@@ -60,7 +152,8 @@ namespace WembleyManagementSystem
                     Name = "BuyButton",
                     HeaderText = "Action",
                     Text = "Buy",
-                    UseColumnTextForButtonValue = true
+                    UseColumnTextForButtonValue = true,
+                    Visible = false
                 };
                 eventGrid.Columns.Add(buyCol);
             }
