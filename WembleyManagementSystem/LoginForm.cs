@@ -156,17 +156,27 @@ namespace LoginUser
             txtUsername.Clear();
             txtPassword.Clear();
 
-            //Open the form based on the role
+            // This is used to open the correct form based on the user role
             switch (loggedinUser.UserRole)
             {
                 case "Admin":
-                case "Business":
-                    // Open the shared Admin/Business dashboard
+                    // This is used to open the admin dashboard for admin users
                     new AdminUser.AdminBusinessForm(_eventSystem, _userSystem, loggedinUser).Show();
+                    break;
+
+                case "Verified_Business":
+                    // This is used to open the business dashboard only for verified business users
+                    new AdminUser.AdminBusinessForm(_eventSystem, _userSystem, loggedinUser).Show();
+                    break;
+
+                case "Unverified_Business":
+                    // This is used to show a message to unverified business users that they cannot access the dashboard yet
+                    MessageBox.Show("Your business account is not yet verified. Please contact an admin.", "Access Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     break;
 
                 case "Client":
                 default:
+                    // This is used to open the client form for client users
                     new ClientForm(_eventSystem, loggedinUser).Show();
                     break;
             }

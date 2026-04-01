@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using WembleyManagementSystem;
 
@@ -38,7 +39,8 @@ namespace ManageUser
             Label lblRole = new Label { Text = "Select New Role:", Location = new Point(20, 290), Size = new Size(100, 20) };
             
             cmbRoles = new ComboBox { Location = new Point(130, 288), Size = new Size(150, 25) };
-            cmbRoles.Items.AddRange(new string[] { "Client", "Business", "Admin" });
+            // This is used to show the correct role options including both Verified and Unverified Business
+            cmbRoles.Items.AddRange(new string[] { "Verified_Business", "Unverified_Business" });
 
             btnUpdateRole = new Button { Text = "Update Role", Location = new Point(300, 285), Size = new Size(120, 30), BackColor = Color.LightGreen };
             btnUpdateRole.Click += BtnUpdateRole_Click;
@@ -51,18 +53,15 @@ namespace ManageUser
 
         private void LoadUsers()
         {
-            // You might need to format this depending on how your UserLinkedList returns data
             var userNodes = _userSystem.GetAllUsers();
-            
-            // Extract the actual User objects from the nodes for the DataGridView
-            User[] usersArray = new User[userNodes.Length];
-            for(int i = 0; i < userNodes.Length; i++)
-            {
-                if(userNodes[i] != null)
-                    usersArray[i] = userNodes[i].User;
-            }
 
-            dgvUsers.DataSource = usersArray;
+            // This is used to only show business accounts (Verified and Unverified) since the admin does not need to manage clients
+            var businessUsers = userNodes
+                .Where(n => n != null && (n.User.UserRole == "Verified_Business" || n.User.UserRole == "Unverified_Business"))
+                .Select(n => n.User)
+                .ToArray();
+
+            dgvUsers.DataSource = businessUsers;
         }
 
         private void BtnUpdateRole_Click(object sender, EventArgs e)

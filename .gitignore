@@ -26,4 +26,7 @@ publish/
 *.tmp
 *.temp
 
+# Claude Code
+.claude/
+
 # Resx files should be tracked if they are part of the project
